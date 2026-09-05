@@ -16,11 +16,18 @@ def build_index(pdf_path):
     full_text = " ".join(pages)
 
     chunks = chunk_text(full_text)
+    chunk_records = [
+        {
+            "text": chunk,
+            "source": pdf_path
+        }
+        for chunk in chunks
+    ]
 
     embeddings = model.encode(chunks)
 
     index = {
-        "chunks": chunks,
+        "chunks": chunk_records,
         "embeddings": embeddings
     }
 

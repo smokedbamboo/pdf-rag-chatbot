@@ -12,10 +12,10 @@ def retrieve(query, chunks, embeddings, k=3):
 
     scores = []
 
-    for chunk, embedding in zip(chunks, embeddings):
+    for chunk_record, embedding in zip(chunks, embeddings):
         score = cos_sim(query_embedding, embedding).item()
 
-        scores.append((chunk, score))
+        scores.append((chunk_record, score))
 
     scores.sort(
         key=lambda x: x[1],

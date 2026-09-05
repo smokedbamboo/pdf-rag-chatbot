@@ -33,15 +33,19 @@ def main():
         print("\nRetrieved Chunks:")
         print("=" * 80)
 
-        for i, (chunk, score) in enumerate(results, start=1):
+        for i, (chunk_record, score) in enumerate(results, start=1):
             print(f"\n[{i}] Score: {score:.4f}")
             print("-" * 80)
-            print(chunk)
+
+            print(f"Source: {chunk_record['source']}")
+            print()
+
+            print(chunk_record["text"])
 
         print("\n" + "=" * 80)
 
         retrieved_chunks = [
-            chunk
+            chunk_record["text"]
             for chunk, score in results
         ]
 
