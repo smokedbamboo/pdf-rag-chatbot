@@ -7,22 +7,25 @@ model = SentenceTransformer(
 )
 
 
-def retrieve(query, chunks):
+def retrieve(query, chunks, k=3):
     query_embedding = model.encode(query)
 
     chunk_embeddings = model.encode(chunks)
 
-    best_score = -1
-    best_idx = 0
+    scores = []
 
-    for i, chunk_embedding in enumerate(chunk_embeddings):
+    for chunk, chunk_embedding in zip(chunks, chunk_embeddings):
         score = cos_sim(query_embedding, chunk_embedding).item()
 
-        if score > best_score:
-            best_score = score
-            best_idx = i
+        scores.append((chunk, score))
 
-    return chunks[best_idx]
+    scores = sorted(
+        scores,
+        key=lambda x: x[1],
+        reverse=True
+    )
+
+    return scores[:k]
 
 
 if __name__ == "__main__":
@@ -34,6 +37,9 @@ if __name__ == "__main__":
 
     query = "What is self attention?"
 
-    result = retrieve(query, chunks)
+    results = retrieve(query, chunks, k=2)
 
-    print(result)
+    for chunk, score in results:
+        print(f"Score: {score:.4f}")
+        print(chunk)
+        print("-" * 50)
