@@ -1,43 +1,61 @@
 import pickle
 
-from sentence_transformers import SentenceTransformer
-from sentence_transformers.util import cos_sim
+from retriever import retrieve
+from prompt_builder import build_prompt
+from llm import ask_llm
 
 
-model = SentenceTransformer(
-    "sentence-transformers/all-MiniLM-L6-v2"
-)
-
-
-def search(query):
+def load_index():
     with open("indexes/index.pkl", "rb") as f:
-        index = pickle.load(f)
+        return pickle.load(f)
+
+
+def main():
+    index = load_index()
 
     chunks = index["chunks"]
     embeddings = index["embeddings"]
 
-    query_embedding = model.encode(query)
+    while True:
+        question = input("\nAsk a question (type 'exit' to quit): ")
 
-    best_score = -1
-    best_idx = 0
+        if question.lower() == "exit":
+            print("Goodbye!")
+            break
 
-    for i, embedding in enumerate(embeddings):
-        score = cos_sim(query_embedding, embedding).item()
+        results = retrieve(
+            question,
+            chunks,
+            embeddings,
+            k=3
+        )
 
-        if score > best_score:
-            best_score = score
-            best_idx = i
+        print("\nRetrieved Chunks:")
+        print("=" * 80)
 
-    return chunks[best_idx], best_score
+        for i, (chunk, score) in enumerate(results, start=1):
+            print(f"\n[{i}] Score: {score:.4f}")
+            print("-" * 80)
+            print(chunk)
+
+        print("\n" + "=" * 80)
+
+        retrieved_chunks = [
+            chunk
+            for chunk, score in results
+        ]
+
+        prompt = build_prompt(
+            question,
+            retrieved_chunks
+        )
+
+        answer = ask_llm(prompt)
+
+        print("\nAnswer:")
+        print("-" * 80)
+        print(answer)
 
 
 if __name__ == "__main__":
-    query = input("Ask a question: ")
-
-    chunk, score = search(query)
-
-    print("\nBest Match:")
-    print("-" * 50)
-    print(chunk)
-
-    print(f"\nSimilarity Score: {score:.4f}")
+    main()

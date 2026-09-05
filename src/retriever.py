@@ -7,20 +7,17 @@ model = SentenceTransformer(
 )
 
 
-def retrieve(query, chunks, k=3):
+def retrieve(query, chunks, embeddings, k=3):
     query_embedding = model.encode(query)
-
-    chunk_embeddings = model.encode(chunks)
 
     scores = []
 
-    for chunk, chunk_embedding in zip(chunks, chunk_embeddings):
-        score = cos_sim(query_embedding, chunk_embedding).item()
+    for chunk, embedding in zip(chunks, embeddings):
+        score = cos_sim(query_embedding, embedding).item()
 
         scores.append((chunk, score))
 
-    scores = sorted(
-        scores,
+    scores.sort(
         key=lambda x: x[1],
         reverse=True
     )
@@ -35,11 +32,16 @@ if __name__ == "__main__":
         "Positional encoding adds order information"
     ]
 
+    embeddings = model.encode(chunks)
+
     query = "What is self attention?"
 
-    results = retrieve(query, chunks, k=2)
+    results = retrieve(
+        query,
+        chunks,
+        embeddings,
+        k=2
+    )
 
     for chunk, score in results:
-        print(f"Score: {score:.4f}")
-        print(chunk)
-        print("-" * 50)
+        print(f"{score:.4f} | {chunk}")
