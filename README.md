@@ -15,8 +15,7 @@ The project was built as a learning exercise covering:
 - Vector retrieval
 - Prompt construction
 - Local LLM inference
-- Git and GitHub workflows
-- Software engineering fundamentals
+
 
 The final system can answer questions about a PDF document by retrieving relevant context and passing it to a local LLM running through Ollama.
 
