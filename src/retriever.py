@@ -1,5 +1,7 @@
+import faiss
+import pickle
+
 from sentence_transformers import SentenceTransformer
-from sentence_transformers.util import cos_sim
 
 
 model = SentenceTransformer(
@@ -7,41 +9,42 @@ model = SentenceTransformer(
 )
 
 
-def retrieve(query, chunks, embeddings, k=3):
-    query_embedding = model.encode(query)
+def retrieve(query, chunks, index, k=3):
+    query_embedding = model.encode([query]).astype("float32")
 
-    scores = []
-
-    for chunk_record, embedding in zip(chunks, embeddings):
-        score = cos_sim(query_embedding, embedding).item()
-
-        scores.append((chunk_record, score))
-
-    scores.sort(
-        key=lambda x: x[1],
-        reverse=True
+    distances, indices = index.search(
+        query_embedding,
+        k
     )
 
-    return scores[:k]
+    results = []
+
+    for idx, distance in zip(indices[0], distances[0]):
+        results.append(
+            (chunks[idx], distance)
+        )
+
+    return results
 
 
 if __name__ == "__main__":
-    chunks = [
-        "Transformers use self attention",
-        "Cats are mammals",
-        "Positional encoding adds order information"
-    ]
+    index = faiss.read_index(
+        "indexes/faiss.index"
+    )
 
-    embeddings = model.encode(chunks)
+    with open("indexes/metadata.pkl", "rb") as f:
+        chunks = pickle.load(f)
 
     query = "What is self attention?"
 
     results = retrieve(
         query,
         chunks,
-        embeddings,
-        k=2
+        index,
+        k=3
     )
 
-    for chunk, score in results:
-        print(f"{score:.4f} | {chunk}")
+    for chunk, distance in results:
+        print(f"{distance:.4f}")
+        print(chunk["text"])
+        print("-" * 50)

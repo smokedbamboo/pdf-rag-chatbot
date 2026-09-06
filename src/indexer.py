@@ -1,4 +1,5 @@
 import pickle
+import faiss
 
 from pdf_loader import load_pdf
 from chunker import chunk_text
@@ -16,6 +17,7 @@ def build_index(pdf_path):
     full_text = " ".join(pages)
 
     chunks = chunk_text(full_text)
+
     chunk_records = [
         {
             "text": chunk,
@@ -26,13 +28,23 @@ def build_index(pdf_path):
 
     embeddings = model.encode(chunks)
 
-    index = {
-        "chunks": chunk_records,
-        "embeddings": embeddings
-    }
+    print("Embedding shape:", embeddings.shape)
 
-    with open("indexes/index.pkl", "wb") as f:
-        pickle.dump(index, f)
+    dimension = embeddings.shape[1]
+
+    index = faiss.IndexFlatL2(dimension)
+
+    index.add(embeddings.astype("float32"))
+
+    print("FAISS index size:", index.ntotal)
+
+    with open("indexes/metadata.pkl", "wb") as f:
+        pickle.dump(chunk_records, f)
+
+    faiss.write_index(
+        index,
+        "indexes/faiss.index"
+    )
 
     print(f"Saved {len(chunks)} chunks")
 

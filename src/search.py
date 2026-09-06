@@ -1,3 +1,4 @@
+import faiss
 import pickle
 
 from retriever import retrieve
@@ -6,15 +7,18 @@ from llm import ask_llm
 
 
 def load_index():
-    with open("indexes/index.pkl", "rb") as f:
-        return pickle.load(f)
+    index = faiss.read_index(
+        "indexes/faiss.index"
+    )
+
+    with open("indexes/metadata.pkl", "rb") as f:
+        chunks = pickle.load(f)
+
+    return index, chunks
 
 
 def main():
-    index = load_index()
-
-    chunks = index["chunks"]
-    embeddings = index["embeddings"]
+    index, chunks = load_index()
 
     while True:
         question = input("\nAsk a question (type 'exit' to quit): ")
@@ -26,15 +30,15 @@ def main():
         results = retrieve(
             question,
             chunks,
-            embeddings,
+            index,
             k=3
         )
 
         print("\nRetrieved Chunks:")
         print("=" * 80)
 
-        for i, (chunk_record, score) in enumerate(results, start=1):
-            print(f"\n[{i}] Score: {score:.4f}")
+        for i, (chunk_record, distance) in enumerate(results, start=1):
+            print(f"\n[{i}] Distance: {distance:.4f}")
             print("-" * 80)
 
             print(f"Source: {chunk_record['source']}")
@@ -46,7 +50,7 @@ def main():
 
         retrieved_chunks = [
             chunk_record["text"]
-            for chunk, score in results
+            for chunk_record, distance in results
         ]
 
         prompt = build_prompt(
