@@ -1,25 +1,9 @@
-import faiss
-import pickle
-
 from retriever import retrieve
 from prompt_builder import build_prompt
 from llm import ask_llm
 
 
-def load_index():
-    index = faiss.read_index(
-        "indexes/faiss.index"
-    )
-
-    with open("indexes/metadata.pkl", "rb") as f:
-        chunks = pickle.load(f)
-
-    return index, chunks
-
-
 def main():
-    index, chunks = load_index()
-
     while True:
         question = input("\nAsk a question (type 'exit' to quit): ")
 
@@ -29,8 +13,6 @@ def main():
 
         results = retrieve(
             question,
-            chunks,
-            index,
             k=3
         )
 

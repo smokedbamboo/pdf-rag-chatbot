@@ -1,50 +1,40 @@
-import faiss
-import pickle
-
-from sentence_transformers import SentenceTransformer
+import chromadb
 
 
-model = SentenceTransformer(
-    "sentence-transformers/all-MiniLM-L6-v2"
+client = chromadb.PersistentClient(
+    path="chroma_db"
+)
+
+collection = client.get_collection(
+    name="pdf_rag"
 )
 
 
-def retrieve(query, chunks, index, k=3):
-    query_embedding = model.encode([query]).astype("float32")
-
-    distances, indices = index.search(
-        query_embedding,
-        k
+def retrieve(query, k=3):
+    results = collection.query(
+        query_texts=[query],
+        n_results=k
     )
 
-    results = []
+    retrieved = []
 
-    for idx, distance in zip(indices[0], distances[0]):
-        results.append(
-            (chunks[idx], distance)
+    documents = results["documents"][0]
+    metadatas = results["metadatas"][0]
+    distances = results["distances"][0]
+
+    for document, metadata, distance in zip(
+        documents,
+        metadatas,
+        distances
+    ):
+        retrieved.append(
+            (
+                {
+                    "text": document,
+                    "source": metadata["source"]
+                },
+                distance
+            )
         )
 
-    return results
-
-
-if __name__ == "__main__":
-    index = faiss.read_index(
-        "indexes/faiss.index"
-    )
-
-    with open("indexes/metadata.pkl", "rb") as f:
-        chunks = pickle.load(f)
-
-    query = "What is self attention?"
-
-    results = retrieve(
-        query,
-        chunks,
-        index,
-        k=3
-    )
-
-    for chunk, distance in results:
-        print(f"{distance:.4f}")
-        print(chunk["text"])
-        print("-" * 50)
+    return retrieved
